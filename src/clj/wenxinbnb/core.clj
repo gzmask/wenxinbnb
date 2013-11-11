@@ -56,7 +56,6 @@
   (GET "/taxs/:id" {params :params session :session} (tax/show (:id params) session))
   (GET "/taxs/:id/update" {{id :id} :params session :session} (tax/update id session))
   (POST "/taxs/:id/change" {params :params session :session} (tax/change params session))
-
   (GET "/login" {session :session} (log/login session))
   (GET "/logout" {session :session} (log/logout session))
   (POST "/check" {params :params session :session} (log/check (:username params) (:password params) session))

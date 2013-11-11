@@ -70,7 +70,7 @@
   (let [taxs (j/with-connection SQLDB
                 (j/with-query-results rs ["select * from Tax"] (doall rs)))]
     (if (:login session) 
-      (pages (list [:a {:href "/taxs/new"} "添加商品"]
+      (pages (list [:a {:href "/taxs/new"} "添加税收"]
                     [:h2 "taxs"]
                     (for [tax taxs]
                       [:div.row-fluid
