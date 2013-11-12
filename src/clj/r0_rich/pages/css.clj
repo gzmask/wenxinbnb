@@ -1,9 +1,9 @@
 (ns r0_rich.pages.css)
 
-(defn css [] 
+(defn pos_css [] 
   {:headers {"Content-Type" "text/css"}
    :body "body {
-            background-color: #000;
+            background-color: #fff;
             background-repeat: no-repeat;
             background-position: 10px 50px;
             background-size: 1280px 800px;

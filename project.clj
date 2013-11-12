@@ -10,6 +10,7 @@
                  [ring/ring-jetty-adapter "1.1.8"]
                  [ring-mock "0.1.5"]
                  [hiccup "1.0.3"]
+                 [clj-time "0.6.0"]
                  [compojure "1.1.5"]
                  [org.xerial/sqlite-jdbc "3.7.2"]
                  [org.clojure/java.jdbc "0.3.0-alpha4"]

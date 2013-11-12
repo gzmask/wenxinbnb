@@ -2,8 +2,12 @@
     (:use hiccup.core
           r0_rich.env
           r0_rich.pages.template_pg
+          hiccup.core
+          hiccup.util
           hiccup.page)
     (:require [clojure.java.jdbc.sql :as s] 
+              [clj-time.coerce :as t]
+              [clj-time.format :as f]
               [clojure.java.jdbc :as j]))
 
 (defn index [session]
@@ -14,7 +18,8 @@
                     (for [invoice invoices]
                       [:div.row-fluid 
                        [:a.span1 {:href (str "/invoices/"(:id invoice))} (:id invoice)]
-                       [:a.span3 {:href (str "/invoices/"(:id invoice))} "时间戳:" (:timestamp invoice)]
+                       [:a.span3 {:href (str "/invoices/"(:id invoice))} (f/unparse (f/formatter "yy-MM-dd-hh") (t/from-long (:timestamp invoice)))]
+         
                        [:a.span1 {:href (str "/invoices/"(:id invoice))} "$" (:total invoice)]
                        [:a.span1 {:href (str "/invoices/"(:id invoice))} (if (== 1 (:refund invoice)) "refunded" "sold")]
                        ])))
@@ -28,46 +33,50 @@
       (list 
         [:form {:method "post" :action "/invoices/create" :novalidate "novalidate"}
            [:div.row-fluid 
-             [:input.span1 {:value "item id" :type "text" :readonly "readonly"}]
              [:input.span1 {:value "plucode" :type "text" :readonly "readonly"}]
              [:input.span2 {:value "item name" :type "text" :readonly "readonly"}]
-             [:input.span1 {:value "price" :type "text" :readonly "readonly"}]]
-           (for [item (:invoice session)] 
+             [:input.span1 {:value "price" :type "text" :readonly "readonly"}]
+             [:input.span1 {:value "quantity" :type "text" :readonly "readonly"}]]
+           (for [invoice (:invoice session)] 
              [:div.row-fluid 
-               [:input.span1 {:name (str "items["(name (first item))"][item_id]") :type "text" :readonly "readonly" :value (first item)}]
-               [:input.span1 {:name (str "items["(name (first item))"][plucode]") :type "text" :readonly "readonly" :value (:plucode (second item))}]
-               [:input.span2 {:name (str "items["(name (first item))"][item_name]") :type "text" :readonly "readonly" :value (:item_name (second item))}]
-               (if (= (:taxable (second item)) "1")
-                 [:input.span1.price_change_with_tax {:name (str "items["(name (first item))"][price]") 
+               [:input.span1 {:name (str "items["(name (first invoice))"][plucode]") :type "text" :readonly "readonly" :value (first invoice)}]
+               [:input.span2 {:name (str "items["(name (first invoice))"][item_name]") :type "text" :readonly "readonly" :value (:item_name (second invoice))}]
+               (if (= (:taxable (second invoice)) "1")
+                 [:input.span1.price_change_with_tax {:name (str "items["(name (first invoice))"][price]") 
                               :type "number" :min 0 
-                              :step (/ (:price (second item)) 10) 
-                              :max (+ (:price (second item)) 0.001) 
-                              :value (:price (second item))}]
-                 [:input.span1.price_change_without_tax {:name (str "items["(name (first item))"][price]") 
+                              :step (/ (:price (second invoice)) 10) 
+                              :max (+ (* (:price (second invoice)) (:quantity (second invoice))) 0.001) 
+                              :value (* (:price (second invoice)) (:quantity (second invoice)))}]
+                 [:input.span1.price_change_without_tax {:name (str "items["(name (first invoice))"][price]") 
                               :type "number" :min 0 
-                              :step (/ (:price (second item)) 10) 
-                              :max (+ (:price (second item)) 0.001) 
-                              :value (:price (second item))}])])
+                              :step (/ (:price (second invoice)) 10) 
+                              :max (+ (* (:price (second invoice)) (:quantity (second invoice))) 0.001) 
+                              :value (* (:price (second invoice)) (:quantity (:second invoice)))}])
+               [:input.span1 {:name (str "items["(name (first invoice))"][quantity]")
+                              :type "number" :readonly "readonly"
+                              :step 1
+                              :value (:quantity (second invoice))}]])
            [:div.row-fluid 
              [:input.span1.offset2 {:value "总数:" :type "text" :readonly "readonly"}] 
-             [:input.span1 {:type "number" :readonly "readonly" :name "total"
+             [:input.input-large {:type "number" :readonly "readonly" :name "total"
                             :id "price_total"
                             :value 
                             (format "%.2f" (reduce + (for [invoice (:invoice session)] 
-                                                       (double (:price (second invoice))))))}]] 
+                                                       (double (* (:price (second invoice)) 
+                                                                  (:quantity (second invoice)))))))}]] 
            [:div.row-fluid 
              [:lable.span2.offset1 "税收类型:"]
              [:select#tax_change.span3 {:name "tax"}
-                [:option {:value 0 :disabled "disabled" :selected "selected"} "add tax"]
+                [:option {:value 0 :selected "selected"} "no tax"]
               (for [tax taxs]
                 [:option {:value (:rate tax)} (str (:name tax) " " (:rate tax))])]]
          [:div.row-fluid 
           [:input.span2.offset1 {:type "submit" :value "结帐"}]
           [:input.span2 {:type "reset" :value "重置"}]]]
         [:div.row-fluid
-         [:a.span2.offset1 {:href "/items"} "Shopping Continue"]]
+         [:a.span2.offset1 {:href "/items"} "继续添加"]]
         [:script {:src "/invoice_new.js"}]))
-    (pages [:a {:href "/items"} "請先登錄或选择商品"]))))
+    (pages [:a {:href "/items"} "請先选择商品"]))))
 
 
 (defn create [params session]
@@ -80,17 +89,19 @@
                                 :refund 0})
             invoice_id ((keyword "last_insert_rowid()") (first invoice))] 
         (doseq [item (:items params)] 
-          (let [origin_item (first (j/with-connection SQLDB 
-                                     (j/with-query-results rs [(str "select * from Item where id = '" (:item_id (second item)) "';")] (doall rs)))) 
-                insert_item (j/insert! SQLDB :Item_sold {:item_name (:item_name origin_item)
-                                             :item_type (:item_type origin_item)
-                                             :plucode (:plucode origin_item)
-                                             :price (:price (second item))
-                                             :cost (:cost origin_item)
-                                             :refund 0
-                                             :user_id (:user_id origin_item)
-                                             :invoice_id invoice_id}) 
-                removed_items (j/delete! SQLDB :Item (s/where {:id (:id origin_item)}))])) 
+          (let [origin_items (take (read-string (:quantity (second item))) (j/with-connection SQLDB 
+                                     (j/with-query-results rs [(str "select * from Item where plucode = '" (:plucode (second item)) "';")] (doall rs))))]
+                (doseq [origin_item origin_items] 
+                  (j/insert! SQLDB :Item_sold {:item_name (:item_name origin_item)
+                                   :item_type (:item_type origin_item)
+                                   :plucode (:plucode origin_item)
+                                   :price (/ (read-string (:price (second item))) 
+                                             (read-string (:quantity (second item))))
+                                   :cost (:cost origin_item)
+                                   :refund 0
+                                   :user_id (:user_id origin_item)
+                                   :invoice_id invoice_id}) 
+                  (j/delete! SQLDB :Item (s/where {:id (:id origin_item)}))))) 
         (let [sold_items (j/with-connection SQLDB 
                            (j/with-query-results rs [(str "select * from Item_sold where invoice_id = '" invoice_id "';")] (doall rs)))]
           {:body (pages 
@@ -99,7 +110,7 @@
                      (for [sold_item sold_items]
                        [:div.row-fluid
                         [:div.span1 "ID:" (:id sold_item)]
-                        [:div.span1 "PLUcode:" (:plucode sold_item)]
+                        [:div.span1 "PLU:" (:plucode sold_item)]
                         [:div.span3 (:item_name sold_item)]
                         [:div.span1 "$" (:price sold_item)]]) 
                      [:a {:href (str "/invoices/" invoice_id)} "打印小票"]))
@@ -111,54 +122,88 @@
   (let [sold_items (j/with-connection SQLDB
                (j/with-query-results rs [(str "select * from Item_sold where invoice_id = '" (:id invoice) "';")] (doall rs)))]
   (list [:h2.offset1 "invoice"] 
-        [:div.row-fluid 
-         [:div.span2 "invoice total price: "] 
-         [:div.span1 (:total invoice)]]
-        [:div.row-fluid 
-         [:div.span2 "invoice tax rate: "] 
-         [:div.span1 (:tax invoice)]]
-        [:div.row-fluid 
-         [:div.span2 "invoice timestamp: "] 
-         [:div.span3 (:timestamp invoice)]]
+        [:div.printable
+          [:h3 "Wenxin Bed & Breakfast"]
+          [:div "www.wenxinbnb.ca"] [:br]
+          [:div "sold items:"]
+          (for [item sold_items]
+            (list 
+              [:div.row-fluid 
+                [:span.span2 (:item_name item) "&nbsp;&nbsp;"] 
+                [:span.span2 "plu" (:plucode item) "&nbsp;&nbsp;"] 
+                [:span.span2 "$" (:price item) "&nbsp;&nbsp;"] 
+                [:span.span2 (if (== 1 (:refund item)) "refunded" "sold")]]))
+            [:div.row-fluid 
+             [:span.span2 "total price: "] 
+             [:span.span1 (double (:total invoice))]]
+            [:div.row-fluid 
+             [:span.span2 "invoice tax rate: "] 
+             [:span.span1 (:tax invoice)]]
+            [:div.row-fluid 
+             [:span.span2 "timestamp: "] 
+             [:span.span3 (t/from-long (:timestamp invoice))]]]
+        [:a {:href "#" :onclick "printInvoice(this)"} "打印"] 
+        [:br]
         [:div.row-fluid 
          [:div.span2 [:a {:href (str "/invoices/" (:id invoice) "/update")} "修改或退款"]]
-         [:div.span2 [:a {:href (str "/invoices/" (:id invoice) "/remove")} "删除"]]]
-        [:h2 "sold items"]
-        (for [item sold_items]
-          [:div.row-fluid 
-           [:div.span3 (:item_name item)] 
-           [:div.span2 (:plucode item)] 
-           [:div.span2 (:cost item)]
-           [:div.span2 "$" (:price item)] 
-           [:div.span2 (if (== 1 (:refund item)) "refunded" "sold")]
-           ]))))
+         [:div.span2 [:a {:href (str "/invoices/" (:id invoice) "/remove")} "删除"]]
+         [:div.span2 [:a {:href (str "/")} "返回"]]]
+        )))
 
 (defn invoice_pg [invoice]
   (let [sold_items (j/with-connection SQLDB
                (j/with-query-results rs [(str "select * from Item_sold where invoice_id = '" (:id invoice) "';")] (doall rs)))]
   (list [:h2.offset1 "invoice"] 
-        [:div.row-fluid 
-         [:div.span2 "invoice total price: "] 
-         [:div.span1 (:total invoice)]]
-        [:div.row-fluid 
-         [:div.span2 "invoice tax rate: "] 
-         [:div.span1 (:tax invoice)]]
-        [:div.row-fluid 
-         [:div.span2 "invoice timestamp: "] 
-         [:div.span3 (:timestamp invoice)]]
-        [:h2 "sold items"]
+        [:h2 "Wenxin Bed & Breakfast"]
+        [:div "sold items:"]
         (for [item sold_items]
           [:div.row-fluid 
            [:div.span3 (:item_name item)] 
            [:div.span2 (:plucode item)] 
-           [:div.span2 "$" (:price item)]]))))
+           [:div.span2 "$" (:price item)]
+           (if (== 1 (:refund item)) 
+             [:div.span2 "returned"])])
+        [:div.row-fluid 
+         [:div.span2 "invoice total price: "] 
+         [:div.span1 (double (:total invoice))]]
+        [:div.row-fluid 
+         [:div.span2 "invoice tax rate: "] 
+         [:div.span1 (:tax invoice)]]
+        [:div.row-fluid 
+         [:div.span2 "timestamp: "] 
+         [:div.span3 (t/from-long (:timestamp invoice))]]
+        [:div.row-fluid 
+         [:div.span2 [:a {:href (str "/")} "返回"]]])))
 
 (defn show [id session]
   (let [invoice (first (j/with-connection SQLDB
                (j/with-query-results rs [(str "select * from Invoice where id = '" id "';")] (doall rs))))]
     (if (:login session) 
-      (pages (admin_invoice_pg invoice))
-      (pages (invoice_pg invoice)))))
+      (html5
+         [:head 
+          [:title "長亨POS系統"]]
+          [:link {:href "/vendor/bootstrap/css/bootstrap.min.css" :rel "stylesheet" 
+                  :type "text/css" :media "all"}]
+          [:link {:href "/vendor/bootstrap/css/bootstrap-responsive.css" :rel "stylesheet" 
+                  :type "text/css" :media "all"}]
+          [:link {:href "/vendor/font-awesome/css/font-awesome.min.css" :rel "stylesheet" 
+                  :type "text/css" :media "all"}]
+          [:link {:href "/pos_style.css" :rel "stylesheet" 
+                  :type "text/css" :media "all"}]
+          (include-js "/invoice_printer.js")
+         [:body
+          [:div.row-fluid.content [:h1.offset1 "Wenxin Bed & Breakfast"]
+            [:div.row-fluid (admin_invoice_pg invoice)]]])
+      (html5
+         [:head 
+          [:title "長亨POS系統"]]
+          (include-css "/vendor/bootstrap/css/bootstrap.min.css")
+          (include-css "/vendor/bootstrap/css/bootstrap-responsive.css")
+          (include-css "/vendor/font-awesome/css/font-awesome.min.css")
+          (include-css "/pos_style.css")
+         [:body
+          [:div.row-fluid.content [:h1.offset1 "Wenxin Bed & Breakfast"]
+            [:div.row-fluid (invoice_pg invoice)]]]))))
 
 (defn update [id session]
   (let [invoice (first (j/with-connection SQLDB 
@@ -175,7 +220,7 @@
             [:input.span3 {:name "tax" :type "text" :value (:tax invoice)}]]
            [:div.row-fluid
             [:lable.span2.offset1 "时间戳:"]
-            [:input.span3 {:name "timestamp" :type "text" :value (:timestamp invoice)}]]
+            [:input.span3 {:name "timestamp" :readonly "readonly" :type "text" :value (:timestamp invoice)}]]
            [:div.row-fluid
             [:h3 "已售商品:"] 
             [:div.row-fluid 
@@ -206,7 +251,8 @@
       (doseq [aitem (:items params)]
         (let [item (second aitem)
               update_item (j/update! SQLDB :Item_sold item (s/where {:id (:id item)}))]))
-      (pages [:h2 "修改成功."]))
+      (pages (list [:h2 "修改成功."]
+                   [:script (str "window.location.replace(\"/invoices/" (:id params) "\");")])))
     (pages [:a {:href "/login"} "請登錄>>"])))
 
 (defn aremove [id session]
