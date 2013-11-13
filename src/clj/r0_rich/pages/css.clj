@@ -2,7 +2,8 @@
 
 (defn pos_css [] 
   {:headers {"Content-Type" "text/css"}
-   :body "body {
+   :body "
+          body {
             background-color: #fff;
             background-repeat: no-repeat;
             background-position: 10px 50px;

@@ -6,6 +6,7 @@
           hiccup.util
           hiccup.page)
     (:require [clojure.java.jdbc.sql :as s] 
+              [clj-time.core :as ct]
               [clj-time.coerce :as t]
               [clj-time.format :as f]
               [clojure.java.jdbc :as j]))
@@ -18,7 +19,7 @@
                     (for [invoice invoices]
                       [:div.row-fluid 
                        [:a.span1 {:href (str "/invoices/"(:id invoice))} (:id invoice)]
-                       [:a.span3 {:href (str "/invoices/"(:id invoice))} (f/unparse (f/formatter "yy-MM-dd-hh") (t/from-long (:timestamp invoice)))]
+                       [:a.span3 {:href (str "/invoices/"(:id invoice))} (f/unparse (f/formatter "yyyy-MM-dd,HH:mm") (ct/from-time-zone (t/from-long (:timestamp invoice)) (ct/time-zone-for-offset -6)))]
          
                        [:a.span1 {:href (str "/invoices/"(:id invoice))} "$" (:total invoice)]
                        [:a.span1 {:href (str "/invoices/"(:id invoice))} (if (== 1 (:refund invoice)) "refunded" "sold")]
@@ -123,36 +124,45 @@
                (j/with-query-results rs [(str "select * from Item_sold where invoice_id = '" (:id invoice) "';")] (doall rs)))]
   (list [:h2.offset1 "invoice"] 
         [:img {:src "/img/wenxin_header.jpg"}]
-        [:form#client_info
-          [:div "client name:" [:input#client_name {:type "text" :name "client_name"}]]
-          [:div "telephone:" [:input#client_telephone {:type "text" :name "client_telephone"}]]
-          [:div "address:" [:input#client_address {:type "text" :name "client_address"}]]
-          [:div "check in date:" [:input#client_checkin {:type "date" :name "client_checkin"}]]
-          [:div "checkout date:" [:input#client_checkout {:type "date" :name "client_checkout"}]]]
+        [:form#client_info.row-fluid
+         [:div.span6
+          [:div.row-fluid "client name:" [:input#client_name {:type "text" :name "client_name"}]]
+          [:div.row-fluid "telephone:" [:input#client_telephone {:type "text" :name "client_telephone"}]]
+          [:div.row-fluid "address:" [:input#client_address {:type "text" :name "client_address"}]]]
+         [:div.span6
+          [:div.row-fluid "check in date:" [:input#client_checkin {:type "date" :name "client_checkin"}]]
+          [:div.row-fluid "checkout date:" [:input#client_checkout {:type "date" :name "client_checkout"}]]]]
         [:div#printable
-          [:div "sold items:"]
-          [:table {:style "width:100%;text-align:left;"}
-            [:tr 
-              [:th "Description"] 
-              [:th "price"]
-              [:th "status"]]
+          [:table {:style "margin-left: 20px; width: 100%; border-collapse:collapse; text-align:left;font-size: 18px;"}
+            [:tr {:style "font-size:20px;color:#000;"} 
+              [:th {:style "padding:15px; border: 1px solid black; font-size:20px;color:#000;"} "Description"] 
+              [:th {:style "padding:15px; border: 1px solid black; font-size:20px;color:#000;"} "price"]
+              [:th {:style "padding:15px; border: 1px solid black; font-size:20px;color:#000;"} "status"]]
           (for [item sold_items]
             (list 
                [:tr
-                [:td (:item_name item)] 
-                [:td "$" (:price item)] 
-                [:td (if (== 1 (:refund item)) "refunded" "sold")]]))]
-            [:div.row-fluid 
-             [:span.span2 "total price: "] 
-             [:span.span1 (double (:total invoice))]]
-            [:div.row-fluid 
-             [:span.span2 "invoice tax rate: "] 
-             [:span.span1 (* 100 (:tax invoice)) "%"]]
-            [:div.row-fluid 
-             [:span.span2 "invoiced time: "] 
-             [:span.span3 (t/from-long (:timestamp invoice))]]]
+                [:td {:style "padding:15px; border: 1px solid #888; font-size:20px;color:#000;"} (:item_name item)] 
+                [:td {:style "padding:15px; border: 1px solid #888; font-size:20px;color:#000;"} "$" (:price item)] 
+                [:td {:style "padding:15px; border: 1px solid #888; font-size:20px;color:#000;"} (if (== 1 (:refund item)) "refunded" "sold")]]))
+            [:tr [:td "&nbsp;"]]
+            [:tr 
+              [:td {:style "padding:15px; border: 1px solid #888; font-size:20px;color:#000;"}
+                 [:span "total price: "]]
+              [:td {:style "padding:15px; border: 1px solid #888; font-size:20px;color:#000;"}
+                 [:span "$" (double (:total invoice))]]]
+            [:tr 
+              [:td {:style "padding:15px; border: 1px solid #888; font-size:20px;color:#000;"}
+                 [:span "invoice tax rate: "]]
+              [:td {:style "padding:15px; border: 1px solid #888; font-size:20px;color:#000;"}
+                 [:span (* 100 (:tax invoice)) "%"]]]
+            [:tr 
+              [:td {:style "padding:15px; border: 1px solid #888; font-size:20px;color:#000;"}
+                 [:span "invoiced time: "]]
+              [:td {:style "padding:15px; border: 1px solid #888; font-size:20px;color:#000;"}
+                 [:span (f/unparse (f/formatter "yyyy-MM-dd,HH:mm") (ct/from-time-zone (t/from-long (:timestamp invoice)) (ct/time-zone-for-offset -6)))]]]
+            [:tr [:td "&nbsp;"]]]]
         [:a {:href "#" :onclick "printInvoice(this)"} "打印"] 
-        [:br]
+        [:br] [:br]
         [:div.row-fluid 
          [:div.span2 [:a {:href (str "/invoices/" (:id invoice) "/update")} "修改或退款"]]
          [:div.span2 [:a {:href (str "/invoices/" (:id invoice) "/remove")} "删除"]]
@@ -180,7 +190,7 @@
          [:div.span1 (:tax invoice)]]
         [:div.row-fluid 
          [:div.span2 "timestamp: "] 
-         [:div.span3 (t/from-long (:timestamp invoice))]]
+         [:div.span3 (f/unparse (f/formatter "yyyy-MM-dd,HH:mm") (ct/from-time-zone (t/from-long (:timestamp invoice)) (ct/time-zone-for-offset -6)))]]
         [:div.row-fluid 
          [:div.span2 [:a {:href (str "/")} "返回"]]])))
 
