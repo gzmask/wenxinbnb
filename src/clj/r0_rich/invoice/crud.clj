@@ -122,25 +122,34 @@
   (let [sold_items (j/with-connection SQLDB
                (j/with-query-results rs [(str "select * from Item_sold where invoice_id = '" (:id invoice) "';")] (doall rs)))]
   (list [:h2.offset1 "invoice"] 
-        [:div.printable
-          [:h3 "Wenxin Bed & Breakfast"]
-          [:div "www.wenxinbnb.ca"] [:br]
+        [:img {:src "/img/wenxin_header.jpg"}]
+        [:form#client_info
+          [:div "client name:" [:input#client_name {:type "text" :name "client_name"}]]
+          [:div "telephone:" [:input#client_telephone {:type "text" :name "client_telephone"}]]
+          [:div "address:" [:input#client_address {:type "text" :name "client_address"}]]
+          [:div "check in date:" [:input#client_checkin {:type "date" :name "client_checkin"}]]
+          [:div "checkout date:" [:input#client_checkout {:type "date" :name "client_checkout"}]]]
+        [:div#printable
           [:div "sold items:"]
+          [:table {:style "width:100%;text-align:left;"}
+            [:tr 
+              [:th "Description"] 
+              [:th "price"]
+              [:th "status"]]
           (for [item sold_items]
             (list 
-              [:div.row-fluid 
-                [:span.span2 (:item_name item) "&nbsp;&nbsp;"] 
-                [:span.span2 "plu" (:plucode item) "&nbsp;&nbsp;"] 
-                [:span.span2 "$" (:price item) "&nbsp;&nbsp;"] 
-                [:span.span2 (if (== 1 (:refund item)) "refunded" "sold")]]))
+               [:tr
+                [:td (:item_name item)] 
+                [:td "$" (:price item)] 
+                [:td (if (== 1 (:refund item)) "refunded" "sold")]]))]
             [:div.row-fluid 
              [:span.span2 "total price: "] 
              [:span.span1 (double (:total invoice))]]
             [:div.row-fluid 
              [:span.span2 "invoice tax rate: "] 
-             [:span.span1 (:tax invoice)]]
+             [:span.span1 (* 100 (:tax invoice)) "%"]]
             [:div.row-fluid 
-             [:span.span2 "timestamp: "] 
+             [:span.span2 "invoiced time: "] 
              [:span.span3 (t/from-long (:timestamp invoice))]]]
         [:a {:href "#" :onclick "printInvoice(this)"} "打印"] 
         [:br]
@@ -192,7 +201,7 @@
                   :type "text/css" :media "all"}]
           (include-js "/invoice_printer.js")
          [:body
-          [:div.row-fluid.content [:h1.offset1 "Wenxin Bed & Breakfast"]
+          [:div.row-fluid.content 
             [:div.row-fluid (admin_invoice_pg invoice)]]])
       (html5
          [:head 
