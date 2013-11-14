@@ -133,7 +133,7 @@
           [:div.row-fluid "check in date:" [:input#client_checkin {:type "date" :name "client_checkin"}]]
           [:div.row-fluid "checkout date:" [:input#client_checkout {:type "date" :name "client_checkout"}]]]]
         [:div#printable
-          [:table {:style "margin-left: 20px; width: 100%; border-collapse:collapse; text-align:left;font-size: 18px;"}
+          [:table {:style "width: 100%; border-collapse:collapse; text-align:left;font-size: 18px;"}
             [:tr {:style "font-size:20px;color:#000;"} 
               [:th {:style "padding:15px; border: 1px solid black; font-size:20px;color:#000;"} "Description"] 
               [:th {:style "padding:15px; border: 1px solid black; font-size:20px;color:#000;"} "price"]
