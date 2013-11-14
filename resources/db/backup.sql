@@ -8,7 +8,7 @@ CREATE TABLE User (
 );
 INSERT INTO "User" VALUES(1,'gzmask','121212',1);
 INSERT INTO "User" VALUES(2,'daisy','123456',2);
-INSERT INTO "User" VALUES(3,'tim','123456',2);
+INSERT INTO "User" VALUES(3,'danco','123456',2);
 CREATE TABLE User_role (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     role_name varchar(255)

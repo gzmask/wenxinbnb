@@ -31,4 +31,4 @@ insert into User_role (id, role_name) values (3, "customer");
 
 insert into User (id, account_name, password, user_role) values (1, "gzmask", "121212", 1);
 insert into User (id, account_name, password, user_role) values (2, "daisy", "123456", 2);
-insert into User (id, account_name, password, user_role) values (3, "tim", "123456", 2);
+insert into User (id, account_name, password, user_role) values (3, "danco", "123456", 2);
