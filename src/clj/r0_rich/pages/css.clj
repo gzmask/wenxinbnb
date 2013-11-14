@@ -34,7 +34,7 @@
             font-size: 20px;
             color: #0A578F;}
           :target {
-            background-color: #000;
+            background-color: #fff;
           }
           @font-face {
             font-family: advent-Re;
