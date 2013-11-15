@@ -43,8 +43,8 @@ CREATE TABLE Version (
 id INTEGER PRIMARY KEY AUTOINCREMENT,
 timestamp varchar(255)
 );
-INSERT INTO "Version" VALUES(1,'201308281517');
-INSERT INTO "Version" VALUES(2,'201309011009');
+INSERT INTO "Version" VALUES(1,'201311151257');
+INSERT INTO "Version" VALUES(2,'201311151257');
 CREATE TABLE Tax (
 id INTEGER PRIMARY KEY AUTOINCREMENT,
 name varchar(255),
@@ -53,10 +53,16 @@ timestamp INTEGER
 );
 CREATE TABLE Invoice (
 id INTEGER PRIMARY KEY AUTOINCREMENT,
-total INTEGER,
+name varchar(255),
+tel varchar(255),
+address varchar(255),
+checkin varchar(255),
+checkout varchar(255),
+subtotal float,
+total float,
 timestamp INTEGER,
 refund Boolean
-, tax float);
+, tax INTEGER, tax2 INTEGER);
 DELETE FROM sqlite_sequence;
 INSERT INTO "sqlite_sequence" VALUES('User_role',3);
 INSERT INTO "sqlite_sequence" VALUES('User',3);

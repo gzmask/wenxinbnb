@@ -27,12 +27,23 @@
        (pages [:a {:href "/login"} "請登錄>>"]))))
 
 (defn new [session]
-  (let [taxs (j/with-connection SQLDB
-               (j/with-query-results rs [(str "select * from Tax")] (doall rs)))]
   (if (and (:login session) (:invoice session))
+  (let [taxs (j/with-connection SQLDB
+               (j/with-query-results rs [(str "select * from Tax")] (doall rs)))
+        subtotal (format "%.2f" (reduce + (for [invoice (:invoice session)] 
+                                                       (double (* (:price (second invoice)) 
+                                                                  (:quantity (second invoice)))))))]
     (pages 
       (list 
         [:form {:method "post" :action "/invoices/create" :novalidate "novalidate"}
+           [:div.row-fluid
+             [:div.span6
+               [:div.row-fluid "Client name:" [:input {:type "text" :name "name"}]]
+               [:div.row-fluid "Telephone:" [:input {:type "text" :name "tel"}]]
+               [:div.row-fluid "Address:" [:input {:type "text" :name "address"}]]]
+             [:div.span6
+               [:div.row-fluid "Checkin Date:" [:input {:type "date" :name "checkin"}]
+               [:div.row-fluid "Checkout Date:" [:input {:type "date" :name "checkout"}]]]]]
            [:div.row-fluid 
              [:input.span1 {:value "plucode" :type "text" :readonly "readonly"}]
              [:input.span2 {:value "item name" :type "text" :readonly "readonly"}]
@@ -58,26 +69,34 @@
                               :step 1
                               :value (:quantity (second invoice))}]])
            [:div.row-fluid 
-             [:input.span1.offset2 {:value "总数:" :type "text" :readonly "readonly"}] 
+             [:input.span1.offset2 {:value "税前总数:" :type "text" :readonly "readonly"}] 
+             [:input.input-large {:type "number" :readonly "readonly" :name "subtotal"
+                            :id "price_subtotal"
+                            :value subtotal}]]
+           [:div.row-fluid 
+             [:input.span1.offset2 {:value "税后总数:" :type "text" :readonly "readonly"}] 
              [:input.input-large {:type "number" :readonly "readonly" :name "total"
                             :id "price_total"
-                            :value 
-                            (format "%.2f" (reduce + (for [invoice (:invoice session)] 
-                                                       (double (* (:price (second invoice)) 
-                                                                  (:quantity (second invoice)))))))}]] 
+                            :value subtotal}]] 
            [:div.row-fluid 
-             [:lable.span2.offset1 "税收类型:"]
-             [:select#tax_change.span3 {:name "tax"}
+             [:lable.span2 "国税:"] 
+             [:select#tax_change.span2 {:name "tax"}
                 [:option {:value 0 :selected "selected"} "no tax"]
               (for [tax taxs]
-                [:option {:value (:rate tax)} (str (:name tax) " " (:rate tax))])]]
+                [:option {:value (:rate tax)} (str (:name tax) " " (* 100 (:rate tax)) "%")])]]
+           [:div.row-fluid 
+             [:lable.span2 "省税:"] 
+             [:select#tax_change2.span2 {:name "tax2"}
+                [:option {:value 0 :selected "selected"} "no tax"]
+              (for [tax taxs]
+                [:option {:value (:rate tax)} (str (:name tax) " " (* 100 (:rate tax)) "%")])]]
          [:div.row-fluid 
           [:input.span2.offset1 {:type "submit" :value "结帐"}]
           [:input.span2 {:type "reset" :value "重置"}]]]
         [:div.row-fluid
          [:a.span2.offset1 {:href "/items"} "继续添加"]]
-        [:script {:src "/invoice_new.js"}]))
-    (pages [:a {:href "/items"} "請先选择商品"]))))
+        [:script {:src "/invoice_new.js"}])))
+    (pages [:a {:href "/items"} "請先选择商品"])))
 
 
 (defn create [params session]
@@ -85,8 +104,15 @@
     (do 
       (let [invoice (j/insert! SQLDB :Invoice 
                                {:timestamp (System/currentTimeMillis) 
+                                :name (:name params) 
+                                :tel (:tel params) 
+                                :address (:address params) 
+                                :checkin (:checkin params) 
+                                :checkout (:checkout params) 
+                                :subtotal (:subtotal params) 
                                 :total (:total params) 
                                 :tax (:tax params)
+                                :tax2 (:tax2 params)
                                 :refund 0})
             invoice_id ((keyword "last_insert_rowid()") (first invoice))] 
         (doseq [item (:items params)] 
@@ -100,6 +126,7 @@
                                              (read-string (:quantity (second item))))
                                    :cost (:cost origin_item)
                                    :refund 0
+                                   :taxable (:taxable origin_item) 
                                    :user_id (:user_id origin_item)
                                    :invoice_id invoice_id}) 
                   (j/delete! SQLDB :Item (s/where {:id (:id origin_item)}))))) 
@@ -126,35 +153,47 @@
         [:img {:src "/img/wenxin_header.jpg"}]
         [:form#client_info.row-fluid
          [:div.span6
-          [:div.row-fluid "client name:" [:input#client_name {:type "text" :name "client_name"}]]
-          [:div.row-fluid "telephone:" [:input#client_telephone {:type "text" :name "client_telephone"}]]
-          [:div.row-fluid "address:" [:input#client_address {:type "text" :name "client_address"}]]]
+          [:div.row-fluid "client name:" [:input#client_name {:type "text" :name "client_name" :value (:name invoice)}]]
+          [:div.row-fluid "telephone:" [:input#client_telephone {:type "text" :name "client_telephone" :value (:tel invoice)}]]
+          [:div.row-fluid "address:" [:input#client_address {:type "text" :name "client_address" :value (:address invoice)}]]]
          [:div.span6
-          [:div.row-fluid "check in date:" [:input#client_checkin {:type "date" :name "client_checkin"}]]
-          [:div.row-fluid "checkout date:" [:input#client_checkout {:type "date" :name "client_checkout"}]]]]
+          [:div.row-fluid "check in date:" [:input#client_checkin {:type "date" :name "client_checkin" :value (:checkin invoice)}]]
+          [:div.row-fluid "checkout date:" [:input#client_checkout {:type "date" :name "client_checkout" :value (:checkout invoice)}]]]]
         [:div#printable
           [:table {:style "width: 100%; border-collapse:collapse; text-align:left;font-size: 18px;"}
             [:tr {:style "font-size:20px;color:#000;"} 
               [:th {:style "padding:15px; border: 1px solid black; font-size:20px;color:#000;"} "Description"] 
               [:th {:style "padding:15px; border: 1px solid black; font-size:20px;color:#000;"} "price"]
+              [:th {:style "padding:15px; border: 1px solid black; font-size:20px;color:#000;"} "taxable"]
               [:th {:style "padding:15px; border: 1px solid black; font-size:20px;color:#000;"} "status"]]
           (for [item sold_items]
             (list 
                [:tr
                 [:td {:style "padding:15px; border: 1px solid #888; font-size:20px;color:#000;"} (:item_name item)] 
                 [:td {:style "padding:15px; border: 1px solid #888; font-size:20px;color:#000;"} "$" (:price item)] 
+                [:td {:style "padding:15px; border: 1px solid #888; font-size:20px;color:#000;"} (if (:taxable item) "Yes" "No")] 
                 [:td {:style "padding:15px; border: 1px solid #888; font-size:20px;color:#000;"} (if (== 1 (:refund item)) "refunded" "sold")]]))
             [:tr [:td "&nbsp;"]]
+            [:tr 
+              [:td {:style "padding:15px; border: 1px solid #888; font-size:20px;color:#000;"}
+                 [:span "subtotal price: "]]
+              [:td {:style "padding:15px; border: 1px solid #888; font-size:20px;color:#000;"}
+                 [:span "$" (double (:subtotal invoice))]]]
+            [:tr 
+              [:td {:style "padding:15px; border: 1px solid #888; font-size:20px;color:#000;"}
+                 [:span "national tax rate: "]]
+              [:td {:style "padding:15px; border: 1px solid #888; font-size:20px;color:#000;"}
+                 [:span (* 100 (:tax invoice)) "%"]]]
+            [:tr 
+              [:td {:style "padding:15px; border: 1px solid #888; font-size:20px;color:#000;"}
+                 [:span "provincial tax rate: "]]
+              [:td {:style "padding:15px; border: 1px solid #888; font-size:20px;color:#000;"}
+                 [:span (* 100 (:tax2 invoice)) "%"]]]
             [:tr 
               [:td {:style "padding:15px; border: 1px solid #888; font-size:20px;color:#000;"}
                  [:span "total price: "]]
               [:td {:style "padding:15px; border: 1px solid #888; font-size:20px;color:#000;"}
                  [:span "$" (double (:total invoice))]]]
-            [:tr 
-              [:td {:style "padding:15px; border: 1px solid #888; font-size:20px;color:#000;"}
-                 [:span "invoice tax rate: "]]
-              [:td {:style "padding:15px; border: 1px solid #888; font-size:20px;color:#000;"}
-                 [:span (* 100 (:tax invoice)) "%"]]]
             [:tr 
               [:td {:style "padding:15px; border: 1px solid #888; font-size:20px;color:#000;"}
                  [:span "invoiced time: "]]
