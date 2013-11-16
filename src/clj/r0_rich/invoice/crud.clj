@@ -194,11 +194,6 @@
                  [:span "total price: "]]
               [:td {:style "padding:15px; border: 1px solid #888; font-size:20px;color:#000;"}
                  [:span "$" (double (:total invoice))]]]
-            [:tr 
-              [:td {:style "padding:15px; border: 1px solid #888; font-size:20px;color:#000;"}
-                 [:span "invoiced time: "]]
-              [:td {:style "padding:15px; border: 1px solid #888; font-size:20px;color:#000;"}
-                 [:span (f/unparse (f/formatter "yyyy-MM-dd,HH:mm") (ct/from-time-zone (t/from-long (:timestamp invoice)) (ct/time-zone-for-offset -6)))]]]
             [:tr [:td "&nbsp;"]]]]
         [:a {:href "#" :onclick "printInvoice(this)"} "打印"] 
         [:br] [:br]
