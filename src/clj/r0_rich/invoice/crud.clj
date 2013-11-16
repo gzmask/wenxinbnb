@@ -181,14 +181,14 @@
                  [:span "$" (double (:subtotal invoice))]]]
             [:tr 
               [:td {:style "padding:15px; border: 1px solid #888; font-size:20px;color:#000;"}
-                 [:span "national tax rate: "]]
+                 [:span "national tax:"]]
               [:td {:style "padding:15px; border: 1px solid #888; font-size:20px;color:#000;"}
-                 [:span (* 100 (:tax invoice)) "%"]]]
+                 [:span "$" (* (:subtotal invoice) (:tax invoice)) "-" (* 100 (:tax invoice)) "%"]]]
             [:tr 
               [:td {:style "padding:15px; border: 1px solid #888; font-size:20px;color:#000;"}
-                 [:span "provincial tax rate: "]]
+                 [:span "provincial tax:"]]
               [:td {:style "padding:15px; border: 1px solid #888; font-size:20px;color:#000;"}
-                 [:span (* 100 (:tax2 invoice)) "%"]]]
+                 [:span "$" (* (:subtotal invoice) (:tax2 invoice)) "-" (* 100 (:tax2 invoice)) "%"]]]
             [:tr 
               [:td {:style "padding:15px; border: 1px solid #888; font-size:20px;color:#000;"}
                  [:span "total price: "]]
@@ -271,11 +271,32 @@
   (if (:login session)
     (pages [:form.span10 {:action (str "/invoices/" id "/change") :method "post"}
            [:div.row-fluid
-            [:lable.span2.offset1 "总价:"]
-            [:input.span3 {:name "total" :type "text" :value (:total invoice)}]]
+            [:lable.span2.offset1 "客户名字:"]
+            [:input.span3 {:name "name" :type "text" :value (:name invoice)}]]
            [:div.row-fluid
-            [:lable.span2.offset1 "税率:"]
+            [:lable.span2.offset1 "客户电话:"]
+            [:input.span3 {:name "tel" :type "text" :value (:tel invoice)}]]
+           [:div.row-fluid
+            [:lable.span2.offset1 "客户住址:"]
+            [:input.span3 {:name "address" :type "text" :value (:address invoice)}]]
+           [:div.row-fluid
+            [:lable.span2.offset1 "checkin:"]
+            [:input.span3 {:name "checkin" :type "date" :value (:checkin invoice)}]]
+           [:div.row-fluid
+            [:lable.span2.offset1 "checkout:"]
+            [:input.span3 {:name "checkout" :type "date" :value (:checkout invoice)}]]
+           [:div.row-fluid
+            [:lable.span2.offset1 "税前价:"]
+            [:input.span3 {:name "subtotal" :type "text" :value (:subtotal invoice) :readonly "readonly"}]]
+           [:div.row-fluid
+            [:lable.span2.offset1 "国税:"]
             [:input.span3 {:name "tax" :type "text" :value (:tax invoice)}]]
+           [:div.row-fluid
+            [:lable.span2.offset1 "省税:"]
+            [:input.span3 {:name "tax2" :type "text" :value (:tax2 invoice)}]]
+           [:div.row-fluid
+            [:lable.span2.offset1 "税后价:"]
+            [:input.span3 {:name "total" :type "text" :value (:total invoice) :readonly "readonly"}]]
            [:div.row-fluid
             [:lable.span2.offset1 "时间戳:"]
             [:input.span3 {:name "timestamp" :readonly "readonly" :type "text" :value (:timestamp invoice)}]]
@@ -304,13 +325,23 @@
 
 (defn change [params session]
   (if (:login session)
+    (let [subtotal (reduce + (for [item (:items params)] (if (== 1 (read-string (:refund (second item)))) 0 (read-string (:price (second item))))))
+          total (* (+ 1 (read-string (:tax params)) (read-string (:tax2 params))) subtotal)]
     (do 
-      (j/update! SQLDB :Invoice (dissoc params :items) (s/where {:id (:id params)}))
+      (j/update! SQLDB :Invoice {:name (:name params)
+                                 :tel (:tel params)
+                                 :address (:address params)
+                                 :checkin (:checkin params)
+                                 :checkout (:checkout params)
+                                 :subtotal subtotal 
+                                 :tax (:tax params)
+                                 :tax2 (:tax2 params)
+                                 :total total} (s/where {:id (:id params)}))
       (doseq [aitem (:items params)]
         (let [item (second aitem)
               update_item (j/update! SQLDB :Item_sold item (s/where {:id (:id item)}))]))
       (pages (list [:h2 "修改成功."]
-                   [:script (str "window.location.replace(\"/invoices/" (:id params) "\");")])))
+                   [:script (str "window.location.replace(\"/invoices/" (:id params) "\");")]))))
     (pages [:a {:href "/login"} "請登錄>>"])))
 
 (defn aremove [id session]

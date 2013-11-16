@@ -9,7 +9,7 @@ subtotal float,
 total float,
 timestamp INTEGER,
 refund Boolean
-, tax INTEGER, tax2 INTEGER);
+, tax float, tax2 float);
 CREATE TABLE Item (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     item_name varchar(255),

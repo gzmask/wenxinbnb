@@ -62,7 +62,7 @@ subtotal float,
 total float,
 timestamp INTEGER,
 refund Boolean
-, tax INTEGER, tax2 INTEGER);
+, tax float, tax2 float);
 DELETE FROM sqlite_sequence;
 INSERT INTO "sqlite_sequence" VALUES('User_role',3);
 INSERT INTO "sqlite_sequence" VALUES('User',3);

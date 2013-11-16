@@ -12,7 +12,7 @@ subtotal float,
 total float,
 timestamp INTEGER,
 refund Boolean
-, tax INTEGER, tax2 INTEGER);
+, tax float, tax2 float);
 
 INSERT INTO Invoice (id, total, timestamp, refund, tax)
 SELECT id, total, timestamp, refund, tax
