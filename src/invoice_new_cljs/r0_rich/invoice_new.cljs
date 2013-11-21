@@ -15,9 +15,9 @@
         total-with-tax (+ total-taxable (* total-taxable (+ tax-rate tax-rate2)))
         total (+ total-with-tax total-notaxable)] 
     (ef/at ["#price_subtotal"] 
-           (ef/set-prop :value (+ total-taxable total-notaxable)))
+           (ef/set-prop :value (format "%.2f" (+ total-taxable total-notaxable))))
     (ef/at ["#price_total"] 
-           (ef/set-prop :value total))))
+           (ef/set-prop :value (format "%.2f" total)))))
 
 (ef/at [".price_change_without_tax"]
        (event/listen :change 
