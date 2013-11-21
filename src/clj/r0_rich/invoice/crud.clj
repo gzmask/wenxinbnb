@@ -15,14 +15,13 @@
   (let [invoices (j/with-connection SQLDB 
                    (j/with-query-results rs ["select * from Invoice"] (doall rs)))]
     (if (:login session)
-       (pages (list [:h2 "invoices"]
+       (pages (list [:h2.offset1 "invoices"]
                     (for [invoice invoices]
                       [:div.row-fluid 
-                       [:a.span1 {:href (str "/invoices/"(:id invoice))} (:id invoice)]
+                       [:a.span1.offset1 {:href (str "/invoices/"(:id invoice))} (:id invoice)]
                        [:a.span3 {:href (str "/invoices/"(:id invoice))} (f/unparse (f/formatter "yyyy-MM-dd,HH:mm") (ct/from-time-zone (t/from-long (:timestamp invoice)) (ct/time-zone-for-offset -6)))]
          
-                       [:a.span1 {:href (str "/invoices/"(:id invoice))} "$" (:total invoice)]
-                       [:a.span1 {:href (str "/invoices/"(:id invoice))} (if (== 1 (:refund invoice)) "refunded" "sold")]
+                       [:a.span1 {:href (str "/invoices/"(:id invoice))} "$" (format "%.2f" (:total invoice))]
                        ])))
        (pages [:a {:href "/login"} "請登錄>>"]))))
 
@@ -83,13 +82,13 @@
              [:select#tax_change.span2 {:name "tax"}
                 [:option {:value 0 :selected "selected"} "no tax"]
               (for [tax taxs]
-                [:option {:value (:rate tax)} (str (:name tax) " " (* 100 (:rate tax)) "%")])]]
+                [:option {:value (:rate tax)} (str (:name tax) " " (format "%.2f" (* 100 (:rate tax))) "%")])]]
            [:div.row-fluid 
              [:lable.span2 "省税:"] 
              [:select#tax_change2.span2 {:name "tax2"}
                 [:option {:value 0 :selected "selected"} "no tax"]
               (for [tax taxs]
-                [:option {:value (:rate tax)} (str (:name tax) " " (* 100 (:rate tax)) "%")])]]
+                [:option {:value (:rate tax)} (str (:name tax) " " (format "%.2f" (* 100 (:rate tax))) "%")])]]
          [:div.row-fluid 
           [:input.span2.offset1 {:type "submit" :value "结帐"}]
           [:input.span2 {:type "reset" :value "重置"}]]]
@@ -110,7 +109,7 @@
                                 :checkin (:checkin params) 
                                 :checkout (:checkout params) 
                                 :subtotal (:subtotal params) 
-                                :total (:total params) 
+                                :total (read-string (:total params)) 
                                 :tax (:tax params)
                                 :tax2 (:tax2 params)
                                 :refund 0})
@@ -140,7 +139,7 @@
                         [:div.span1 "ID:" (:id sold_item)]
                         [:div.span1 "PLU:" (:plucode sold_item)]
                         [:div.span3 (:item_name sold_item)]
-                        [:div.span1 "$" (:price sold_item)]]) 
+                        [:div.span1 "$" (format "%.2f" (:price sold_item))]]) 
                      [:a {:href (str "/invoices/" invoice_id)} "打印小票"]))
          :headers {"Content-Type" "text/html; charset=utf-8"}
          :session (dissoc session :invoice)})))
@@ -170,7 +169,7 @@
             (list 
                [:tr
                 [:td {:style "padding:15px; border: 1px solid #888; font-size:20px;color:#000;"} (:item_name item)] 
-                [:td {:style "padding:15px; border: 1px solid #888; font-size:20px;color:#000;"} "$" (:price item)] 
+                [:td {:style "padding:15px; border: 1px solid #888; font-size:20px;color:#000;"} "$" (format "%.2f" (:price item))] 
                 [:td {:style "padding:15px; border: 1px solid #888; font-size:20px;color:#000;"} (if (:taxable item) "Yes" "No")] 
                 [:td {:style "padding:15px; border: 1px solid #888; font-size:20px;color:#000;"} (if (== 1 (:refund item)) "refunded" "sold")]]))
             [:tr [:td "&nbsp;"]]
@@ -178,22 +177,22 @@
               [:td {:style "padding:15px; border: 1px solid #888; font-size:20px;color:#000;"}
                  [:span "subtotal price: "]]
               [:td {:style "padding:15px; border: 1px solid #888; font-size:20px;color:#000;"}
-                 [:span "$" (double (:subtotal invoice))]]]
+                 [:span "$" (format "%.2f" (double (:subtotal invoice)))]]]
             [:tr 
               [:td {:style "padding:15px; border: 1px solid #888; font-size:20px;color:#000;"}
-                 [:span "national tax:"]]
+                 [:span "GST " (format "%.2f" (* 100 (:tax invoice))) "%"]]
               [:td {:style "padding:15px; border: 1px solid #888; font-size:20px;color:#000;"}
-                 [:span "$" (* (:subtotal invoice) (:tax invoice)) "-" (* 100 (:tax invoice)) "%"]]]
+                 [:span "$" (format "%.2f" (* (:subtotal invoice) (:tax invoice)))]]]
             [:tr 
               [:td {:style "padding:15px; border: 1px solid #888; font-size:20px;color:#000;"}
-                 [:span "provincial tax:"]]
+                 [:span "PST " (format "%.2f" (* 100 (:tax2 invoice))) "%"]]
               [:td {:style "padding:15px; border: 1px solid #888; font-size:20px;color:#000;"}
-                 [:span "$" (* (:subtotal invoice) (:tax2 invoice)) "-" (* 100 (:tax2 invoice)) "%"]]]
+                 [:span "$" (format "%.2f" (* (:subtotal invoice) (:tax2 invoice)))]]]
             [:tr 
               [:td {:style "padding:15px; border: 1px solid #888; font-size:20px;color:#000;"}
                  [:span "total price: "]]
               [:td {:style "padding:15px; border: 1px solid #888; font-size:20px;color:#000;"}
-                 [:span "$" (double (:total invoice))]]]
+                 [:span "$" (format "%.2f" (double (:total invoice)))]]]
             [:tr [:td "&nbsp;"]]]]
         [:a {:href "#" :onclick "printInvoice(this)"} "打印"] 
         [:br] [:br]
