@@ -12,6 +12,7 @@
                  [hiccup "1.0.3"]
                  [clj-time "0.6.0"]
                  [compojure "1.1.5"]
+                 [me.raynes/laser "1.1.1"]
                  [org.xerial/sqlite-jdbc "3.7.2"]
                  [org.clojure/java.jdbc "0.3.0-alpha4"]
                  [org.clojure/clojure "1.5.1"]
