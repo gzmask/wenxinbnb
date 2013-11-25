@@ -1,7 +1,7 @@
 (ns wenxinbnb.core
   (:gen-class)
-  (:use r0_rich.pages.css
-        r0_rich.pages.home_pg
+  (:use wenxinbnb.pages.css
+        wenxinbnb.pages.home_pg
         r0_rich.pages.no_pg
         compojure.core
         ring.adapter.jetty
@@ -15,13 +15,18 @@
             [r0_rich.invoice.crud :as invoice]
             [r0_rich.tax.crud :as tax]
             [r0_rich.session.log :as log]
+            [r0_rich.pages.css :as admin_css]
+            [r0_rich.pages.home_pg :as admin_home_pg]
             [compojure.route :as route]))
 
 (defroutes app-routes
   (route/resources "/")
-  (GET "/pos_style.css" [] (pos_css))
-  (GET "/" [] home_pg)
-  (GET "/home" [] home_pg)
+  (GET "/main.css" [] (main_css))
+  (GET "/pos_style.css" [] (admin_css/pos_css))
+  (GET "/" [] (index))
+  (GET "/home" [] (index))
+  (GET "/room" [] (room))
+  (GET "/about" [] (about))
   (GET "/items" {session :session} (item/index session))
   (GET "/items/new" {session :session} (item/new session))
   (mulparams/wrap-multipart-params
