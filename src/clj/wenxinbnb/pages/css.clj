@@ -4,10 +4,9 @@
   {:headers {"Content-Type" "text/css"}
    :body "
           body {
-            background-color: #fff;
+            background-color: #ffcf84;
             background-image: url('/img/bg.jpg');
-            background-repeat: repeat-y;
-            background-size: 1280px 800px;
+            background-repeat: repeat-x;
             color: #000;
             font-family: advent-Bd1;}
           .trans_bg {

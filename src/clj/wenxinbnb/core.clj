@@ -23,8 +23,10 @@
   (route/resources "/")
   (GET "/main.css" [] (main_css))
   (GET "/pos_style.css" [] (admin_css/pos_css))
-  (GET "/" [] index)
-  (GET "/home" [] index)
+  (GET "/" [] (index))
+  (GET "/home" [] (index))
+  (GET "/room" [] (room))
+  (GET "/about" [] (about))
   (GET "/items" {session :session} (item/index session))
   (GET "/items/new" {session :session} (item/new session))
   (mulparams/wrap-multipart-params
