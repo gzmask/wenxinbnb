@@ -25,10 +25,29 @@ CREATE TABLE Item (
     cost float,
     user_id int
 , taxable Boolean, picture varchar(255));
+INSERT INTO "Item" VALUES(20,'test room',1,'001',10.0,2.0,1,1,'resources/public/uploads/pro-pic/001/IMG_20131017_034026.jpg');
+INSERT INTO "Item" VALUES(21,'test room',1,'001',10.0,2.0,1,1,'resources/public/uploads/pro-pic/001/IMG_20131017_034026.jpg');
+INSERT INTO "Item" VALUES(22,'test room',1,'001',10.0,2.0,1,1,'resources/public/uploads/pro-pic/001/IMG_20131017_034026.jpg');
+INSERT INTO "Item" VALUES(23,'test room',1,'001',10.0,2.0,1,1,'resources/public/uploads/pro-pic/001/IMG_20131017_034026.jpg');
+INSERT INTO "Item" VALUES(24,'test room',1,'001',10.0,2.0,1,1,'resources/public/uploads/pro-pic/001/IMG_20131017_034026.jpg');
+INSERT INTO "Item" VALUES(25,'test room',1,'001',10.0,2.0,1,1,'resources/public/uploads/pro-pic/001/IMG_20131017_034026.jpg');
+INSERT INTO "Item" VALUES(26,'test room',1,'001',10.0,2.0,1,1,'resources/public/uploads/pro-pic/001/IMG_20131017_034026.jpg');
+INSERT INTO "Item" VALUES(27,'test room',1,'001',10.0,2.0,1,1,'resources/public/uploads/pro-pic/001/IMG_20131017_034026.jpg');
+INSERT INTO "Item" VALUES(28,'test room',1,'001',10.0,2.0,1,1,'resources/public/uploads/pro-pic/001/IMG_20131017_034026.jpg');
+INSERT INTO "Item" VALUES(29,'test room',1,'001',10.0,2.0,1,1,'resources/public/uploads/pro-pic/001/IMG_20131017_034026.jpg');
+INSERT INTO "Item" VALUES(30,'test room',1,'001',10.0,2.0,1,1,'resources/public/uploads/pro-pic/001/IMG_20131017_034026.jpg');
+INSERT INTO "Item" VALUES(31,'test room',1,'001',10.0,2.0,1,1,'resources/public/uploads/pro-pic/001/IMG_20131017_034026.jpg');
+INSERT INTO "Item" VALUES(32,'test room',1,'001',10.0,2.0,1,1,'resources/public/uploads/pro-pic/001/IMG_20131017_034026.jpg');
+INSERT INTO "Item" VALUES(33,'test room',1,'001',10.0,2.0,1,1,'resources/public/uploads/pro-pic/001/IMG_20131017_034026.jpg');
+INSERT INTO "Item" VALUES(34,'test room',1,'001',10.0,2.0,1,1,'resources/public/uploads/pro-pic/001/IMG_20131017_034026.jpg');
+INSERT INTO "Item" VALUES(35,'test room',1,'001',10.0,2.0,1,1,'resources/public/uploads/pro-pic/001/IMG_20131017_034026.jpg');
+INSERT INTO "Item" VALUES(36,'test room',1,'001',10.0,2.0,1,1,'resources/public/uploads/pro-pic/001/IMG_20131017_034026.jpg');
+INSERT INTO "Item" VALUES(37,'test room',1,'001',10.0,2.0,1,1,'resources/public/uploads/pro-pic/001/IMG_20131017_034026.jpg');
 CREATE TABLE Item_type (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     type_name varchar(255)
 );
+INSERT INTO "Item_type" VALUES(1,'rooms');
 CREATE TABLE Item_sold (
 id INTEGER PRIMARY KEY AUTOINCREMENT,
 item_name varchar(255),
@@ -51,6 +70,8 @@ name varchar(255),
 rate float,
 timestamp INTEGER
 );
+INSERT INTO "Tax" VALUES(5,'PST',0.05,NULL);
+INSERT INTO "Tax" VALUES(6,'GST',0.05,NULL);
 CREATE TABLE Invoice (
 id INTEGER PRIMARY KEY AUTOINCREMENT,
 name varchar(255),
@@ -67,5 +88,9 @@ DELETE FROM sqlite_sequence;
 INSERT INTO "sqlite_sequence" VALUES('User_role',3);
 INSERT INTO "sqlite_sequence" VALUES('User',3);
 INSERT INTO "sqlite_sequence" VALUES('Version',2);
-INSERT INTO "sqlite_sequence" VALUES('Invoice',0);
+INSERT INTO "sqlite_sequence" VALUES('Invoice',7);
+INSERT INTO "sqlite_sequence" VALUES('Item_type',1);
+INSERT INTO "sqlite_sequence" VALUES('Item',37);
+INSERT INTO "sqlite_sequence" VALUES('Tax',6);
+INSERT INTO "sqlite_sequence" VALUES('Item_sold',18);
 COMMIT;
